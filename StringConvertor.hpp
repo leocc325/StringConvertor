@@ -1,4 +1,4 @@
-#ifndef STRINGCONVERTOR_H
+﻿#ifndef STRINGCONVERTOR_H
 #define STRINGCONVERTOR_H
 
 #include <string>
@@ -13,7 +13,7 @@
 namespace MetaUtility {
 
     ///数组分隔符
-    static std::string spliter("[SP]");
+    static const std::string spliter("[SP]");
 
     inline std::list<std::string> split(const std::string& input,const std::string& spliter)
     {
@@ -52,33 +52,23 @@ namespace MetaUtility {
     }
 
     ///string转换为string
-    template<typename T,typename std::enable_if<std::is_same<std::string,T>::value,T>::type* = nullptr>
-    inline std::string convertArgToString(const T arg)
+    inline std::string convertArgToString(const std::string& arg)
     {
         return arg;
     }
 
-    ///判断T是否是char*,否则会和转换对象指针的模板产生二义性
-    template<typename T>
-    constexpr static bool IsCharPointer = std::is_same<const char*,T>::value || std::is_same<char*,T>::value;
-
     ///char*转换为string
-    template<typename T,typename std::enable_if<IsCharPointer<T>,T>::type* = nullptr>
-    inline std::string convertArgToString(const T arg)
+    inline std::string convertArgToString(const char* arg)
     {
         return std::string(arg);
     }
 
-    ///判断T是否是指针,同时不是char*
-    template<typename T>
-    constexpr static bool NonCharPointer = std::is_pointer<T>::value && !IsCharPointer<T>;
-
-    ///class object pointer转换为string
-    template<typename T,typename std::enable_if<NonCharPointer<T>, T>::type* = nullptr>
-    inline std::string convertArgToString(const T obj)
+    ///class object转换为string,需要class支持<<重载
+    template<typename T,typename std::enable_if<std::is_class<T>::value, T>::type* = nullptr>
+    inline std::string convertArgToString(const T& obj)
     {
         std::stringstream ss;
-        ss << (*obj);
+        ss << obj;
         return ss.str();
     }
 
@@ -108,14 +98,18 @@ namespace MetaUtility {
         return str;
     }
 
-    template<typename T>
-    constexpr static bool IsIntegral = std::is_enum<T>::value || std::is_integral<T>::value;
-
     ///字符串转换为整数
-    template <typename T,typename std::enable_if<IsIntegral<T>,int>::type* = nullptr>
+    template <typename T,typename std::enable_if<std::is_integral<T>::value,int>::type* = nullptr>
     inline void convertStringToArg(const std::string& str,T& arg)
     {
         arg = static_cast<T>(std::stoll(str));
+    }
+
+    template<typename T,typename std::enable_if<std::is_enum<T>::value,T>::type* = nullptr >
+    inline bool convertStringToArg(const std::string& str,  T& arg)
+    {
+        arg = static_cast<T>(std::stoll(str));
+        return true;
     }
 
     ///字符串转换为浮点型
@@ -134,13 +128,13 @@ namespace MetaUtility {
         arg  = data;
     }
 
-    ///字符串转换为class object pointer
-    template<typename T,typename std::enable_if<NonCharPointer<T*>, T>::type* = nullptr>
-    inline void convertStringToArg(const std::string& str,T* obj)
+    ///字符串转换为class,需要class支持>>重载
+    template<typename T,typename std::enable_if<std::is_class<T>::value, T>::type* = nullptr>
+    inline void convertStringToArg(const std::string& str,T& obj)
     {
         std::stringstream in;
         in << str;
-        in >> (*obj);
+        in >> obj;
     }
 
     template<template<typename...> class Array,typename T,typename...Args>
@@ -186,7 +180,7 @@ namespace MetaUtility {
     }
 
     ///字符串转换为数组
-    template<typename T,std::size_t N,typename std::enable_if<std::is_array<T>::value,T>::type* = nullptr>
+    template<typename T,std::size_t N>
     inline void convertStringToArg(const std::string& str, T(&array)[N])
     {
         std::list<std::string> stringList = split(str,spliter.data());
