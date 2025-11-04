@@ -172,7 +172,7 @@ namespace MetaUtility {
     typename std::enable_if<IsSequenceContainer<Array,T,Args...>,Array<T,Args...>*>::type* = nullptr>
     inline void convertStringToArg(const QString& str, Array<T,Args...>& array)
     {
-        QStringList stringList = str.split(spliter);
+        QStringList stringList = str.split(spliter,Qt::SkipEmptyParts);
 
         Array<T,Args...> tempArray;
         for(auto& item : stringList)
@@ -188,7 +188,7 @@ namespace MetaUtility {
     template<typename T,size_t N>
     inline void  convertStringToArg(const QString& str, std::array<T,N>& array)
     {
-        QStringList stringList = str.split(spliter);
+        QStringList stringList = str.split(spliter,Qt::SkipEmptyParts);
 
         int index = 0;
         T value;
@@ -207,7 +207,7 @@ namespace MetaUtility {
     template<typename T,std::size_t N>
     inline void convertStringToArg(const QString& str, T(&array)[N])
     {
-        QStringList stringList = str.split(spliter);
+        QStringList stringList = str.split(spliter,Qt::SkipEmptyParts);
         ///读取到的参数数量和当前容器的大小不匹配的时候不进行参数读取工作
         if ( stringList.size() != N )
             return;
