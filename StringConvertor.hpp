@@ -12,28 +12,30 @@
 
 namespace MetaUtility {
 
-    ///数组分隔符
-    static const std::string spliter("[SP]");
-
-    inline std::list<std::string> split(const std::string& input,const std::string& spliter)
+    inline std::list<std::string> splitArray(const std::string& input)
     {
         std::list<std::string> tokens;
-        size_t startPos = 0;
-        size_t endPos = input.find(spliter,startPos);
+        std::string::const_iterator beg = input.cbegin();
+        std::string::const_iterator mid = input.cbegin();
+        std::string::const_iterator end = input.cend();
+        while (beg < end)
+        {
+            if(*beg == '(' || *beg == ')' || *beg == ',' || *beg == '@')
+                ++beg;
+            else//查找字符直到遇到非分隔符或者起始终止符
+            {
+                mid = beg + 1;//将第二个指针移动到下一个位置,查找下一个分割符或者起始/终止符
+                while (mid < end)
+                {
+                    if(*mid == '(' || *mid == ')' || *mid == ',' || *mid == '@')
+                        break;
+                    ++mid;
+                }
 
-        while (endPos != std::string::npos) {
-            tokens.push_back(input.substr(startPos, endPos - startPos));
-            startPos = endPos + spliter.size();
-            endPos = input.find(spliter, startPos);
+                tokens.push_back(std::string(beg,mid));//查找完成之后将两个指针所代表的字符串拷贝到结果中
+                beg = mid;//将第一个指针移动到第二个指针位置
+            }
         }
-
-        // 添加最后一个分隔符后的子串（或最后一个子串）
-        tokens.push_back(input.substr(startPos, endPos));
-
-        //如果最后一个字符串为空,则删除最后一个
-        if(tokens.back().empty())
-            tokens.pop_back();
-
         return tokens;
     }
 
@@ -76,12 +78,13 @@ namespace MetaUtility {
     template<typename T,template<typename...Element> class Array,typename...Args>
     inline std::string convertArgToString(const Array<T,Args...>& array)
     {
-        std::string str;
+        std::string str = "(@";
         for(T item : array)
         {
             str.append( convertArgToString(item) );
-            str.append(spliter);
+            str.append(",");
         }
+        str.append(")");
         return str;
     }
 
@@ -89,12 +92,13 @@ namespace MetaUtility {
     template<size_t N,typename T>
     inline std::string convertArgToString(const T(&array)[N])
     {
-        std::string str;
+        std::string str = "(@";
         for(T item : array)
         {
             str.append( convertArgToString(item) );
-            str.append(spliter);
+            str.append(",");
         }
+        str.append(")");
         return str;
     }
 
@@ -148,7 +152,7 @@ namespace MetaUtility {
     typename std::enable_if<IsSequenceContainer<Array,T,Args...>,Array<T,Args...>*>::type* = nullptr>
     inline void convertStringToArg(const std::string& str, Array<T,Args...>& array)
     {
-        std::list<std::string> stringList = split(str,spliter.data());
+        std::list<std::string> stringList = splitArray(str);
 
         Array<T,Args...> tempArray;
         for(auto& item : stringList)
@@ -164,7 +168,7 @@ namespace MetaUtility {
     template<typename T,size_t N>
     inline void  convertStringToArg(const std::string& str, std::array<T,N>& array)
     {
-        std::list<std::string> stringList = split(str,spliter.data());
+        std::list<std::string> stringList = splitArray(str);
 
         int index = 0;
         T value;
@@ -183,7 +187,7 @@ namespace MetaUtility {
     template<typename T,std::size_t N>
     inline void convertStringToArg(const std::string& str, T(&array)[N])
     {
-        std::list<std::string> stringList = split(str,spliter.data());
+        std::list<std::string> stringList = splitArray(str);
         ///读取到的参数数量和当前容器的大小不匹配的时候不进行参数读取工作
         if ( stringList.size() != N )
             return;

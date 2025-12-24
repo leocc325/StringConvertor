@@ -18,8 +18,32 @@
 
 namespace MetaUtility {
 
-    ///数组分隔符
-    static const QString spliter("[SP]");
+    inline QStringList splitArray(const QString& input)
+    {
+        QStringList tokens;
+        QString::const_iterator beg = input.cbegin();
+        QString::const_iterator mid = input.cbegin();
+        QString::const_iterator end = input.cend();
+        while (beg < end)
+        {
+            if(*beg == '(' || *beg == ')' || *beg == ',' || *beg == '@')
+                ++beg;
+            else//查找字符直到遇到非分隔符或者起始终止符
+            {
+                mid = beg + 1;//将第二个指针移动到下一个位置,查找下一个分割符或者起始/终止符
+                while (mid < end)
+                {
+                    if(*mid == '(' || *mid == ')' || *mid == ',' || *mid == '@')
+                        break;
+                    ++mid;
+                }
+
+                tokens.push_back(QString(beg,mid-beg));//查找完成之后将两个指针所代表的字符串拷贝到结果中
+                beg = mid;//将第一个指针移动到第二个指针位置
+            }
+        }
+        return tokens;
+    }
 
     ///数字量转换为string
     template<typename T,typename std::enable_if<std::is_arithmetic<T>::value>::type* = nullptr>
@@ -75,12 +99,13 @@ namespace MetaUtility {
     template<typename T,template<typename...Element> class Array,typename...Args>
     inline QString convertArgToString(const Array<T,Args...>& array)
     {
-        QString str;
+        QString str = "(@";
         for(const T& item : array)
         {
             str.append( convertArgToString(item) );
-            str.append(spliter);
+            str.append(",");
         }
+        str.push_back(")");
         return str;
     }
 
@@ -88,12 +113,13 @@ namespace MetaUtility {
     template<size_t N,typename T>
     inline QString convertArgToString(const T(&array)[N])
     {
-        QString str;
+        QString str = "(@";
         for(const T& item : array)
         {
             str.append( convertArgToString(item) );
-            str.append(spliter);
+            str.append(",");
         }
+        str.append(")");
         return str;
     }
 
@@ -172,7 +198,7 @@ namespace MetaUtility {
     typename std::enable_if<IsSequenceContainer<Array,T,Args...>,Array<T,Args...>*>::type* = nullptr>
     inline void convertStringToArg(const QString& str, Array<T,Args...>& array)
     {
-        QStringList stringList = str.split(spliter,Qt::SkipEmptyParts);
+        QStringList stringList = splitArray(str);
 
         Array<T,Args...> tempArray;
         for(auto& item : stringList)
@@ -188,7 +214,7 @@ namespace MetaUtility {
     template<typename T,size_t N>
     inline void  convertStringToArg(const QString& str, std::array<T,N>& array)
     {
-        QStringList stringList = str.split(spliter,Qt::SkipEmptyParts);
+        QStringList stringList = splitArray(str);
 
         int index = 0;
         T value;
@@ -207,7 +233,7 @@ namespace MetaUtility {
     template<typename T,std::size_t N>
     inline void convertStringToArg(const QString& str, T(&array)[N])
     {
-        QStringList stringList = str.split(spliter,Qt::SkipEmptyParts);
+        QStringList stringList = splitArray(str);
         ///读取到的参数数量和当前容器的大小不匹配的时候不进行参数读取工作
         if ( stringList.size() != N )
             return;
