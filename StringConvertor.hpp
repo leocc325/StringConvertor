@@ -132,6 +132,11 @@ namespace MetaUtility {
         arg  = data;
     }
 
+    inline void convertStringToArg(const std::string& str,std::string& arg)
+    {
+        arg = str;
+    }
+
     ///字符串转换为class,需要class支持>>重载
     template<typename T,typename std::enable_if<std::is_class<T>::value, T>::type* = nullptr>
     inline void convertStringToArg(const std::string& str,T& obj)
@@ -141,15 +146,28 @@ namespace MetaUtility {
         in >> obj;
     }
 
-    template<template<typename...> class Array,typename T,typename...Args>
-    constexpr static bool IsSequenceContainer =
-        std::is_same<Array<T,Args...>, std::list<T,Args...>>::value ||
-        std::is_same<Array<T,Args...>,std::vector<T,Args...>>::value ||
-        std::is_same<Array<T,Args...>,std::deque<T,Args...>>::value;
+//    template<template<typename...> class Array,typename T,typename...Args>
+//    constexpr static bool IsSequenceContainer =
+//        std::is_same<Array<T,Args...>, std::list<T,Args...>>::value ||
+//        std::is_same<Array<T,Args...>,std::vector<T,Args...>>::value ||
+//        std::is_same<Array<T,Args...>,std::deque<T,Args...>>::value ||
+//        std::is_same<Array<Args...>,std::basic_string<T,Args...>>::value;
+
+    template<typename T>
+    struct IsSequenceContainer : std::false_type {};
+
+    template<typename T, typename Alloc>
+    struct IsSequenceContainer<std::vector<T, Alloc>> : std::true_type {};
+
+    template<typename T, typename Alloc>
+    struct IsSequenceContainer<std::list<T, Alloc>> : std::true_type {};
+
+    template<typename T, typename Alloc>
+    struct IsSequenceContainer<std::deque<T, Alloc>> : std::true_type {};
 
     ///字符串转换为容器
     template<typename T,typename...Args,template<typename...> class Array,
-    typename std::enable_if<IsSequenceContainer<Array,T,Args...>,Array<T,Args...>*>::type* = nullptr>
+              typename std::enable_if<IsSequenceContainer<Array<T,Args...>>::value,Array<T,Args...>*>::type* = nullptr>
     inline void convertStringToArg(const std::string& str, Array<T,Args...>& array)
     {
         std::list<std::string> stringList = splitArray(str);

@@ -185,17 +185,35 @@ namespace MetaUtility {
         in >> obj;
     }
 
-    template<template<typename...> class Array,typename T,typename...Args>
-    constexpr static bool IsSequenceContainer =
-        std::is_same<Array<T,Args...>, std::list<T,Args...>>::value ||
-        std::is_same<Array<T,Args...>,std::vector<T,Args...>>::value ||
-        std::is_same<Array<T,Args...>,std::deque<T,Args...>>::value ||
-        std::is_same<Array<T>,QList<T>>::value ||
-        std::is_same<Array<T>,QVector<T>>::value;
+//    template<template<typename...> class Array,typename T,typename...Args>
+//    constexpr static bool IsSequenceContainer =
+//        std::is_same<Array<T,Args...>, std::list<T,Args...>>::value ||
+//        std::is_same<Array<T,Args...>,std::vector<T,Args...>>::value ||
+//        std::is_same<Array<T,Args...>,std::deque<T,Args...>>::value ||
+//        std::is_same<Array<T>,QList<T>>::value ||
+//        std::is_same<Array<T>,QVector<T>>::value;
+
+    template<typename T>
+    struct IsSequenceContainer : std::false_type {};
+
+    template<typename T, typename Alloc>
+    struct IsSequenceContainer<std::vector<T, Alloc>> : std::true_type {};
+
+    template<typename T, typename Alloc>
+    struct IsSequenceContainer<std::list<T, Alloc>> : std::true_type {};
+
+    template<typename T, typename Alloc>
+    struct IsSequenceContainer<std::deque<T, Alloc>> : std::true_type {};
+
+    template<typename T>
+    struct IsSequenceContainer<QList<T>> : std::true_type {};
+
+    template<typename T>
+    struct IsSequenceContainer<QVector<T>> : std::true_type {};
 
     ///字符串转换为容器
     template<typename T,typename...Args,template<typename...> class Array,
-    typename std::enable_if<IsSequenceContainer<Array,T,Args...>,Array<T,Args...>*>::type* = nullptr>
+              typename std::enable_if<IsSequenceContainer<Array<T,Args...>>::value,Array<T,Args...>*>::type* = nullptr>
     inline void convertStringToArg(const QString& str, Array<T,Args...>& array)
     {
         QStringList stringList = splitArray(str);
